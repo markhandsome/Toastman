@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Client</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23ff6c37'/><path d='M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z' stroke='white' stroke-width='1.5' fill='none' transform='translate(4,4) scale(0.75)'/></svg>">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <!-- Login Screen (shown when not authenticated) -->
+  <div class="login-screen" id="login-screen">
+    <div class="login-card">
+      <svg width="56" height="56" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#ff6c37"/><path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="1.5" fill="none" transform="translate(4,4) scale(0.75)"/></svg>
+      <h1 class="login-title">API Client</h1>
+      <p class="login-subtitle">Sign in with your team account to sync collections across your team</p>
+      <button class="login-btn" id="btn-google-login">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Sign in with Google
+      </button>
+      <p class="login-footer">Your collections, environments, and requests will sync in real-time across all team members</p>
+    </div>
+  </div>
+
+  <!-- Project Selection Screen (shown after login, before app) -->
+  <div class="project-screen" id="project-screen" style="display:none">
+    <div class="project-card">
+      <div class="project-card-header">
+        <svg width="40" height="40" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#ff6c37"/><path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="1.5" fill="none" transform="translate(4,4) scale(0.75)"/></svg>
+        <div>
+          <h1 class="project-card-title">Your Projects</h1>
+          <p class="project-card-subtitle" id="project-user-email"></p>
+        </div>
+        <button class="btn btn-sm btn-ghost" id="btn-project-logout" title="Sign out" style="margin-left:auto">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
+      </div>
+      <div class="project-list" id="project-list">
+        <div class="project-loading">Loading projects...</div>
+      </div>
+      <div class="project-actions">
+        <button class="btn btn-primary" id="btn-create-project">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create New Project
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" style="display:none">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <div class="logo">
+          <svg width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#ff6c37"/><path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="1.5" fill="none" transform="translate(4,4) scale(0.75)"/></svg>
+          <span class="logo-text">API Client</span>
+        </div>
+        <button class="btn btn-sm" id="btn-new-tab" title="New Request (Ctrl+N)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New
+        </button>
+        <button class="btn btn-sm" id="btn-import" title="Import Collection">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Import
+        </button>
+      </div>
+      <div class="top-bar-center">
+        <label class="proxy-toggle" title="Route requests through CORS proxy (run: node proxy.js)">
+          <input type="checkbox" id="cors-proxy-toggle">
+          <span class="proxy-toggle-label">Proxy</span>
+        </label>
+        <div class="env-selector">
+          <select id="env-select">
+            <option value="">No Environment</option>
+          </select>
+          <button class="btn btn-sm btn-icon" id="btn-manage-env" title="Manage Environments">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="top-bar-right">
+        <span class="project-name-badge" id="project-name-badge" title="Current project"></span>
+        <button class="btn btn-sm" id="btn-team" title="Team Management">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Team
+        </button>
+        <button class="btn btn-sm btn-ghost" id="btn-switch-project" title="Switch Project">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </button>
+        <span class="sync-status" id="sync-status" title="Cloud sync active">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          <span class="sync-label">Synced</span>
+        </span>
+        <div class="user-profile" id="user-profile">
+          <img class="user-avatar" id="user-avatar" src="" alt="">
+          <span class="user-name" id="user-name"></span>
+          <button class="btn btn-sm btn-ghost" id="btn-logout" title="Sign out">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+        <input type="file" id="import-file" accept=".json" style="display:none">
+      </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-tabs">
+          <button class="sidebar-tab active" data-tab="collections">Collections</button>
+          <button class="sidebar-tab" data-tab="history">History</button>
+        </div>
+
+        <div class="sidebar-content">
+          <!-- Collections Panel -->
+          <div class="sidebar-panel active" id="panel-collections">
+            <div class="sidebar-actions">
+              <button class="btn btn-sm btn-block" id="btn-new-collection">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New Collection
+              </button>
+            </div>
+            <div class="tree-view" id="collections-tree"></div>
+          </div>
+
+          <!-- History Panel -->
+          <div class="sidebar-panel" id="panel-history">
+            <div class="sidebar-actions">
+              <button class="btn btn-sm btn-block btn-danger-text" id="btn-clear-history">Clear All</button>
+            </div>
+            <div class="history-list" id="history-list"></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Sidebar Resize Handle -->
+      <div class="resize-handle resize-handle-x" id="sidebar-resize"></div>
+
+      <!-- Main Content -->
+      <main class="content">
+        <!-- Tab Bar -->
+        <div class="tab-bar" id="tab-bar">
+          <div class="tabs-scroll" id="tabs-scroll"></div>
+        </div>
+
+        <!-- Request Section -->
+        <div class="request-section">
+          <!-- URL Bar -->
+          <div class="url-bar">
+            <select class="method-select" id="method-select">
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="PATCH">PATCH</option>
+              <option value="DELETE">DELETE</option>
+              <option value="HEAD">HEAD</option>
+              <option value="OPTIONS">OPTIONS</option>
+            </select>
+            <div class="url-input-wrapper">
+              <div class="url-highlight" id="url-highlight"></div>
+              <input type="text" class="url-input" id="url-input" placeholder="Enter request URL or paste cURL" autocomplete="off" spellcheck="false">
+            </div>
+            <button class="btn btn-send" id="btn-send">
+              <span class="send-text">Send</span>
+              <span class="send-loading" style="display:none">
+                <svg class="spinner" width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="30 70" stroke-linecap="round"/></svg>
+              </span>
+            </button>
+            <button class="btn btn-save-req" id="btn-save" title="Save (Ctrl+S)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            </button>
+          </div>
+
+          <!-- Request Panel Tabs -->
+          <div class="panel-tabs" id="request-tabs">
+            <button class="panel-tab active" data-panel="params">Params <span class="badge" id="params-count" style="display:none">0</span></button>
+            <button class="panel-tab" data-panel="headers">Headers <span class="badge" id="headers-count" style="display:none">0</span></button>
+            <button class="panel-tab" data-panel="body">Body</button>
+            <button class="panel-tab" data-panel="auth">Auth</button>
+            <button class="panel-tab" data-panel="scripts">Scripts</button>
+          </div>
+
+          <!-- Request Panels -->
+          <div class="request-panels">
+            <!-- Params Panel -->
+            <div class="request-panel active" id="panel-params">
+              <div class="kv-editor" id="params-editor"></div>
+            </div>
+
+            <!-- Headers Panel -->
+            <div class="request-panel" id="panel-headers">
+              <div class="kv-editor" id="headers-editor"></div>
+            </div>
+
+            <!-- Body Panel -->
+            <div class="request-panel" id="panel-body">
+              <div class="body-type-selector">
+                <label><input type="radio" name="body-type" value="none" checked> none</label>
+                <label><input type="radio" name="body-type" value="raw"> raw</label>
+                <label><input type="radio" name="body-type" value="form-data"> form-data</label>
+                <label><input type="radio" name="body-type" value="x-www-form-urlencoded"> x-www-form-urlencoded</label>
+                <select class="raw-type-select" id="raw-type-select" style="display:none">
+                  <option value="json">JSON</option>
+                  <option value="text">Text</option>
+                  <option value="xml">XML</option>
+                  <option value="html">HTML</option>
+                </select>
+              </div>
+              <div class="body-content">
+                <div class="body-none active" id="body-none">
+                  <p class="muted-text">This request does not have a body</p>
+                </div>
+                <div class="body-raw" id="body-raw">
+                  <textarea class="code-editor" id="body-raw-editor" placeholder='{\n  "key": "value"\n}' spellcheck="false"></textarea>
+                </div>
+                <div class="body-form" id="body-form-data">
+                  <div class="kv-editor" id="form-data-editor"></div>
+                </div>
+                <div class="body-urlencoded" id="body-urlencoded">
+                  <div class="kv-editor" id="urlencoded-editor"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Auth Panel -->
+            <div class="request-panel" id="panel-auth">
+              <div class="auth-type-selector">
+                <select id="auth-type-select">
+                  <option value="none">No Auth</option>
+                  <option value="bearer">Bearer Token</option>
+                  <option value="basic">Basic Auth</option>
+                  <option value="apikey">API Key</option>
+                </select>
+              </div>
+              <div class="auth-content">
+                <div class="auth-none active" id="auth-none">
+                  <p class="muted-text">This request does not use any authorization.</p>
+                </div>
+                <div class="auth-bearer" id="auth-bearer">
+                  <div class="form-group">
+                    <label>Token</label>
+                    <input type="text" id="auth-bearer-token" placeholder="Enter bearer token" spellcheck="false">
+                  </div>
+                </div>
+                <div class="auth-basic" id="auth-basic">
+                  <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="auth-basic-username" placeholder="Username">
+                  </div>
+                  <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="auth-basic-password" placeholder="Password">
+                  </div>
+                </div>
+                <div class="auth-apikey" id="auth-apikey">
+                  <div class="form-group">
+                    <label>Key</label>
+                    <input type="text" id="auth-apikey-key" placeholder="e.g. X-API-Key">
+                  </div>
+                  <div class="form-group">
+                    <label>Value</label>
+                    <input type="text" id="auth-apikey-value" placeholder="Enter API key" spellcheck="false">
+                  </div>
+                  <div class="form-group">
+                    <label>Add to</label>
+                    <select id="auth-apikey-addto">
+                      <option value="header">Header</option>
+                      <option value="query">Query Params</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scripts Panel -->
+            <div class="request-panel" id="panel-scripts">
+              <div class="scripts-container">
+                <div class="script-section">
+                  <div class="script-header">
+                    <span class="script-label">Pre-request Script</span>
+                    <span class="script-hint">Runs before the request is sent</span>
+                  </div>
+                  <textarea class="code-editor script-editor" id="script-pre-editor" placeholder="// JavaScript to run before request&#10;// e.g. pm.environment.set('token', 'abc123')" spellcheck="false"></textarea>
+                </div>
+                <div class="script-section">
+                  <div class="script-header">
+                    <span class="script-label">Tests</span>
+                    <span class="script-hint">Runs after response is received</span>
+                  </div>
+                  <textarea class="code-editor script-editor" id="script-test-editor" placeholder="// JavaScript to test the response&#10;// e.g. pm.test('Status is 200', () => pm.response.status === 200)" spellcheck="false"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Response Resize Handle -->
+        <div class="resize-handle resize-handle-y" id="response-resize"></div>
+
+        <!-- Response Section -->
+        <div class="response-section" id="response-section">
+          <div class="response-placeholder" id="response-placeholder">
+            <div class="placeholder-content">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1" opacity="0.4">
+                <path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+              </svg>
+              <p>Enter a URL and click Send to get a response</p>
+              <p class="muted-text">Ctrl+Enter to send</p>
+            </div>
+          </div>
+          <div class="response-content" id="response-content" style="display:none">
+            <div class="response-meta">
+              <span class="response-status" id="response-status"></span>
+              <span class="response-time" id="response-time"></span>
+              <span class="response-size" id="response-size"></span>
+              <button class="btn btn-sm btn-copy" id="btn-copy-response" title="Copy response body">Copy</button>
+            </div>
+            <div class="panel-tabs" id="response-tabs">
+              <button class="panel-tab active" data-panel="resp-body">Body</button>
+              <button class="panel-tab" data-panel="resp-headers">Headers</button>
+              <button class="panel-tab" data-panel="resp-tests">Test Results</button>
+            </div>
+            <div class="response-panels">
+              <div class="response-panel active" id="panel-resp-body">
+                <div class="response-body-tabs">
+                  <button class="resp-body-tab active" data-view="pretty">Pretty</button>
+                  <button class="resp-body-tab" data-view="raw">Raw</button>
+                  <button class="resp-body-tab" data-view="preview">Preview</button>
+                </div>
+                <div class="response-body-content">
+                  <pre class="response-pretty active" id="response-pretty"></pre>
+                  <pre class="response-raw" id="response-raw"></pre>
+                  <iframe class="response-preview" id="response-preview" sandbox="allow-same-origin"></iframe>
+                </div>
+              </div>
+              <div class="response-panel" id="panel-resp-headers">
+                <div class="response-headers-table" id="response-headers-table"></div>
+              </div>
+              <div class="response-panel" id="panel-resp-tests">
+                <div class="test-results" id="response-test-results">
+                  <p class="muted-text">Run a request with test scripts to see results here</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="response-error" id="response-error" style="display:none">
+            <div class="error-content">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              <p class="error-title" id="error-title">Could not send request</p>
+              <p class="error-message" id="error-message"></p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="modal-overlay" style="display:none">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title"></h3>
+        <button class="btn btn-icon modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Context Menu -->
+  <div class="context-menu" id="context-menu" style="display:none"></div>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/environments.js"></script>
+  <script src="js/request.js"></script>
+  <script src="js/collections.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/projects.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: api-client
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: "."
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
