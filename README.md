@@ -1,4 +1,4 @@
-# API Client
+# API Client made by claude
 
 A Postman-style API testing tool built with pure HTML/CSS/JS. Features team collaboration via Firebase, real-time sync, and an Electron desktop app with built-in CORS bypass.
 
